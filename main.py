@@ -4,6 +4,25 @@ import kociemba
 
 video = cv.VideoCapture("test.mp4") # 0 is the default camera, "video.mp4" is the video file
 
+def nome_colore(colore):
+    # Definisci i valori RGB approssimati per i colori desiderati
+    colori_desiderati = {
+        "D": (255, 255, 255),
+        "L": (255, 165, 0),
+        "U": (255, 255, 0),
+        "B": (0, 128, 0),
+        "F": (0, 0, 255),
+        "R": (255, 0, 0)
+    }
+
+    # Calcola la distanza euclidea tra il colore estratto e i colori desiderati
+    distanze = {nome: np.linalg.norm(np.array(colore) - np.array(valore)) for nome, valore in colori_desiderati.items()}
+
+    # Trova il nome del colore con la distanza minima
+    colore_più_vicino = min(distanze, key=distanze.get)
+
+    return colore_più_vicino
+
 def draw_framing_roi(copy):
     rectangle_width = 200
     rectangle_height = rectangle_width
@@ -11,10 +30,10 @@ def draw_framing_roi(copy):
     rectangle_color = (0, 255, 0)
     fwidth, fheight = int(video.get(3)/2), int(video.get(4)/2)
 
-    top_left = int(fwidth/2 - rectangle_width/2), int(fheight/2 - rectangle_height/2)
-    top_right = int(fwidth/2 + rectangle_width/2), int(fheight/2 - rectangle_height/2)
-    bottom_left = int(fwidth/2 - rectangle_width/2), int(fheight/2 + rectangle_height/2)
-    bottom_right = int(fwidth/2 + rectangle_width/2), int(fheight/2 + rectangle_height/2)
+    top_left = int(fwidth/2 - rectangle_width/2), int(fheight/2 - rectangle_height/2) + 15
+    top_right = int(fwidth/2 + rectangle_width/2), int(fheight/2 - rectangle_height/2) + 15
+    bottom_left = int(fwidth/2 - rectangle_width/2), int(fheight/2 + rectangle_height/2) + 15
+    bottom_right = int(fwidth/2 + rectangle_width/2), int(fheight/2 + rectangle_height/2) + 15
 
     # TOP LEFT CORNER
     cv.line(copy, (top_left), (top_left[0] + costant, top_left[1]), rectangle_color, 2)
@@ -72,6 +91,19 @@ def draw_roi_cells(roi):
     for k, v in cells.items():
         x, y, w, h = v
         cv.putText(roi, k, (int(x+w/2-20), int(y+h/2+10)), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 4)
+        rois = cv.cvtColor(roi.copy(), cv.COLOR_BGR2RGB)[y:y+h, x:x+w]
+
+        # Calcola l'istogramma dei colori nell'ROI
+        hist = cv.calcHist([rois], [0, 1, 2], None, [8, 8, 8], [0, 256, 0, 256, 0, 256])
+
+        # Trova l'indice del bin con il valore massimo nell'istogramma
+        index_max = np.unravel_index(np.argmax(hist), hist.shape)
+
+        # Calcola il colore dominante basato sull'indice massimo
+        m = nome_colore(np.array([index_max[0] * 32, index_max[1] * 32, index_max[2] * 32]))
+        print(f"{k}: {m}")
+        if k == "X1":
+            print("\n")
 
 def mapp_cube():
     is_mapped = False
@@ -126,7 +158,7 @@ def solve_rubiks_cube():
     #       | DDD |
     #       | DDD |
     #       
-    scrambled_cube = "DFRLUUURDRFBDRDDDLRUBLFRLDRFLFUDBFRUBFFLLUUBDURLFBBBBL"
+    scrambled_cube = "LURRUFFUBURFDRDRBDDLLDFLLFBDLUFDUFLBUBLFLRRUBDRFBBDRBU"
     
     # Solve the Rubik's Cube
     solution = kociemba.solve(scrambled_cube)
@@ -135,14 +167,15 @@ def solve_rubiks_cube():
     print(solution)
 
 def test(s):
-    scramble = "LLLDUBBFDRRBLRULRRRRBUFUDLFBFULLRDBFDFUBBBFFR"
+    scramble = "LURRUFFUBURFDRDRBDDLLDFLLFBDLUFDUFLBUBLFLRRUBDRFBBDRBU"
     if s == scramble:
         print("Scramble is correct")
+        return True
     else:
         print("Scramble is NOT correct")
+        return False
 
 
 if __name__ == "__main__":
     s = mapp_cube()
-    test(s)
-    # solve_rubiks_cube()
+    if test(s): solve_rubiks_cube()
