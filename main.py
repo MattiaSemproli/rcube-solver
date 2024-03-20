@@ -4,24 +4,34 @@ import kociemba
 
 video = cv.VideoCapture("test.mp4") # 0 is the default camera, "video.mp4" is the video file
 
-def nome_colore(colore):
-    # Definisci i valori RGB approssimati per i colori desiderati
-    colori_desiderati = {
-        "D": (255, 255, 255),
-        "L": (255, 165, 0),
-        "U": (255, 255, 0),
-        "B": (0, 128, 0),
-        "F": (0, 0, 255),
-        "R": (255, 0, 0)
+# Funzione per calcolare la distanza tra due colori RGB
+def distanza_rgb(color1, color2):
+    r1, g1, b1 = color1
+    r2, g2, b2 = color2
+    return ((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2) ** 0.5
+
+def get_dom_color(m):
+    # Lista dei colori con le loro medie RGB
+    colors = {
+        'rosso': (219, 22, 29),
+        'verde': (0, 171, 50),
+        'blu': (0, 33, 113),
+        'giallo': (220, 232, 34),
+        'bianco': (187, 187, 187),
+        'arancione': (238, 100, 24)
     }
 
-    # Calcola la distanza euclidea tra il colore estratto e i colori desiderati
-    distanze = {nome: np.linalg.norm(np.array(colore) - np.array(valore)) for nome, valore in colori_desiderati.items()}
+    # Inizializza la distanza minima e il colore corrispondente
+    distanza_minima = float('inf')
+    colore_corrispondente = None
 
-    # Trova il nome del colore con la distanza minima
-    colore_più_vicino = min(distanze, key=distanze.get)
-
-    return colore_più_vicino
+    # Trova il colore più simile
+    for nome_colore, colore in colors.items():
+        distanza = distanza_rgb(m, colore)
+        if distanza < distanza_minima:
+            distanza_minima = distanza
+            colore_corrispondente = nome_colore
+    return colore_corrispondente
 
 def draw_framing_roi(copy):
     rectangle_width = 200
@@ -93,15 +103,7 @@ def draw_roi_cells(roi):
         cv.putText(roi, k, (int(x+w/2-20), int(y+h/2+10)), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 4)
         rois = cv.cvtColor(roi.copy(), cv.COLOR_BGR2RGB)[y:y+h, x:x+w]
 
-        # Calcola l'istogramma dei colori nell'ROI
-        hist = cv.calcHist([rois], [0, 1, 2], None, [8, 8, 8], [0, 256, 0, 256, 0, 256])
-
-        # Trova l'indice del bin con il valore massimo nell'istogramma
-        index_max = np.unravel_index(np.argmax(hist), hist.shape)
-
-        # Calcola il colore dominante basato sull'indice massimo
-        m = nome_colore(np.array([index_max[0] * 32, index_max[1] * 32, index_max[2] * 32]))
-        print(f"{k}: {m}")
+        print(f"{k}: {get_dom_color(np.mean(rois, axis=(0, 1)).astype(int))}")
         if k == "X1":
             print("\n")
 
