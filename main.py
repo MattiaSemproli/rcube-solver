@@ -51,6 +51,27 @@ def draw_mask_on_roi(copy2, top_left, bottom_right):
 
     # overwrite the section of the background image that has been updated
     copy2[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]] = composite
+    
+    return background_subsection
+
+def draw_roi_cells(roi):
+    cells = {}
+    gray = cv.cvtColor(roi, cv.COLOR_BGR2GRAY)
+    contours, _ = cv.findContours(gray, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
+    for (i, c) in enumerate(contours):
+        if len(contours) == 9:
+            area = cv.contourArea(c)
+            if area > 1500:
+                peri = cv.arcLength(c, True)
+                approx = cv.approxPolyDP(c, 0.02 * peri, True)
+                if len(approx) == 4:
+                    cv.drawContours(roi, c, -1, (255, 255, 255), 2)
+                    x, y, w, h = cv.boundingRect(approx)
+                    cells[f"X{len(contours) - i}"] = (x, y, w, h)
+    
+    for k, v in cells.items():
+        x, y, w, h = v
+        cv.putText(roi, k, (int(x+w/2-20), int(y+h/2+10)), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 4)
 
 def mapp_cube():
     is_mapped = False
@@ -66,9 +87,11 @@ def mapp_cube():
         TL, BR = draw_framing_roi(copy)
         copy2 = copy.copy()
 
-        draw_mask_on_roi(copy2, TL, BR)
+        roi = draw_mask_on_roi(copy2, TL, BR)
 
-        cv.imshow("Video", copy2)
+        draw_roi_cells(roi)
+
+        cv.imshow("Video", np.hstack([frame, copy, copy2]))
 
         if cv.waitKey(1) & 0xFF == ord("q") or is_mapped:
             break
