@@ -5,6 +5,10 @@ import kociemba
 
 video = cv.VideoCapture("test.mp4") # 0 is the default camera, "video.mp4" is the video file
 
+
+cube_color_faces_map = []
+cube_string_faces_map = []
+
 class MainPage(Entity):
     def __init__(self):
         super().__init__()
@@ -103,15 +107,25 @@ class MainPage(Entity):
                             x, y, w, h = cv.boundingRect(approx)
                             cells[f"X{len(contours) - i}"] = (x, y, w, h)
             
+            cls = ""
+            arr = []
             for k, v in cells.items():
                 x, y, w, h = v
                 cv.putText(roi, k, (int(x+w/2-20), int(y+h/2+10)), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 4)
                 rois = cv.cvtColor(roi.copy(), cv.COLOR_BGR2RGB)[y:y+h, x:x+w]
 
-                print(f"{k}: {get_dom_color(np.mean(rois, axis=(0, 1)).astype(int))}")
+                cd = get_dom_color(np.mean(rois, axis=(0, 1)).astype(int))
+                
+                cls += cd
+                arr.append(cd)
+
+                print(f"{k}: {cd}")
                 if k == "X1":
                     print("\n")
-
+            if cube_string_faces_map.count(cls) < 5:
+                cube_string_faces_map.append(cls)
+                cube_color_faces_map.append(arr)
+            
         def mapp_cube():
             is_mapped = False
             scramble = ""
@@ -130,6 +144,28 @@ class MainPage(Entity):
 
                 draw_roi_cells(roi)
 
+                print(cube_string_faces_map)
+                temp = list(set([i for i in cube_string_faces_map if cube_string_faces_map.count(i) > 3]))
+                print(temp)
+                print("\n\n\n\n")
+                if len(temp) == 6:
+                    is_mapped = True
+                    tmp = {
+                        "U": "",
+                        "R": "",
+                        "F": "",
+                        "D": "",
+                        "L": "",
+                        "B": ""
+                    }
+                    for face in temp:
+                        face = face.replace("giallo", "U").replace("rosso", "R").replace("blu", "F").replace("bianco", "D").replace("arancione", "L").replace("verde", "B")
+                        faceTMP = [f for f in face]
+                        tmp[faceTMP[4]] = face
+                    
+                    scramble = tmp["U"] + tmp["R"] + tmp["F"] + tmp["D"] + tmp["L"] + tmp["B"]
+
+
                 cv.imshow("Video", np.hstack([frame, copy, copy2]))
 
                 if cv.waitKey(1) & 0xFF == ord("q") or is_mapped:
@@ -138,9 +174,15 @@ class MainPage(Entity):
             video.release()
             cv.destroyAllWindows()
 
-            return scramble        
+            print(scramble)
+            print(list(set([c for c in scramble if scramble.count(c) == 9])))
+            print(cube_color_faces_map)
+            if len(list(set([c for c in scramble if scramble.count(c) == 9]))) == 6:
+                return scramble
+            else:
+                return None       
 
-        def solve_rubiks_cube():
+        def solve_rubiks_cube(scrambled_cube):
             
             # Scramble the Rubik's Cube
             # The following string represents the state of the Rubik's Cube after it has been scrambled
@@ -164,8 +206,7 @@ class MainPage(Entity):
             #       | DDD |
             #       | DDD |
             #       | DDD |
-            #       
-            scrambled_cube = "LURRUFFUBURFDRDRBDDLLDFLLFBDLUFDUFLBUBLFLRRUBDRFBBDRBU"
+            # 
             
             # Solve the Rubik's Cube
             solution = kociemba.solve(scrambled_cube)
@@ -182,7 +223,8 @@ class MainPage(Entity):
                 return True
             
         s = mapp_cube()
-        if test(s): solution = solve_rubiks_cube()
+        if s is not None and test(s): solution = solve_rubiks_cube(s) 
+        # if test(s): solution = solve_rubiks_cube(s)
         self.go_to_second_page(solution)
     
     def go_to_second_page(self, solution: str):
