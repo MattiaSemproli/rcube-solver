@@ -5,9 +5,42 @@ import kociemba
 
 video = cv.VideoCapture("test.mp4") # 0 is the default camera, "video.mp4" is the video file
 
+
+cube_color_faces_map = []
+cube_string_faces_map = []
+
 class MainPage(Entity):
     def __init__(self):
         super().__init__()
+
+        # Funzione per calcolare la distanza tra due colori RGB
+        def distanza_rgb(color1, color2):
+            r1, g1, b1 = color1
+            r2, g2, b2 = color2
+            return ((r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2) ** 0.5
+
+        def get_dom_color(m):
+            # Lista dei colori con le loro medie RGB
+            colors = {
+                'rosso': (219, 22, 29),
+                'verde': (0, 171, 50),
+                'blu': (0, 33, 113),
+                'giallo': (220, 232, 34),
+                'bianco': (187, 187, 187),
+                'arancione': (238, 100, 24)
+            }
+
+            # Inizializza la distanza minima e il colore corrispondente
+            distanza_minima = float('inf')
+            colore_corrispondente = None
+
+            # Trova il colore più simile
+            for nome_colore, colore in colors.items():
+                distanza = distanza_rgb(m, colore)
+                if distanza < distanza_minima:
+                    distanza_minima = distanza
+                    colore_corrispondente = nome_colore
+            return colore_corrispondente
 
         def draw_framing_roi(copy):
             rectangle_width = 200
@@ -73,14 +106,28 @@ class MainPage(Entity):
                             cv.drawContours(roi, c, -1, (255, 255, 255), 2)
                             x, y, w, h = cv.boundingRect(approx)
                             cells[f"X{len(contours) - i}"] = (x, y, w, h)
-
+            
+            cls = ""
+            arr = []
             for k, v in cells.items():
                 x, y, w, h = v
                 cv.putText(roi, k, (int(x+w/2-20), int(y+h/2+10)), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 4)
-                # CONVERTO TO RGB OR HSV OR WHATEVER COLOR SPACE I WANT
-                # rois = cv.cvtColor(roi.copy(), cv.COLOR_BGR2RGB)[y:y+h, x:x+w]
+                rois = cv.cvtColor(roi.copy(), cv.COLOR_BGR2RGB)[y:y+h, x:x+w]
+
+                cd = get_dom_color(np.mean(rois, axis=(0, 1)).astype(int))
+                
+                cls += cd
+                arr.append(cd)
+
+                print(f"{k}: {cd}")
+                if k == "X1":
+                    print("\n")
+            if cube_string_faces_map.count(cls) < 5:
+                cube_string_faces_map.append(cls)
+                cube_color_faces_map.append(arr)
             
         def mapp_cube():
+            is_mapped = False
             scramble = ""
             while True:
                 ret, frame = video.read()
@@ -97,8 +144,12 @@ class MainPage(Entity):
 
                 draw_roi_cells(roi)
 
-                temp = [] # tmp array to store the faces
+                print(cube_string_faces_map)
+                temp = list(set([i for i in cube_string_faces_map if cube_string_faces_map.count(i) > 3]))
+                print(temp)
+                print("\n\n\n\n")
                 if len(temp) == 6:
+                    is_mapped = True
                     tmp = {
                         "U": "",
                         "R": "",
@@ -114,18 +165,22 @@ class MainPage(Entity):
                     
                     scramble = tmp["U"] + tmp["R"] + tmp["F"] + tmp["D"] + tmp["L"] + tmp["B"]
 
-                    if len(list(set([c for c in scramble if scramble.count(c) == 9]))) == 6:
-                        break
 
                 cv.imshow("Video", np.hstack([frame, copy, copy2]))
 
-                if cv.waitKey(1) & 0xFF == ord("q"):
+                if cv.waitKey(1) & 0xFF == ord("q") or is_mapped:
                     break
             
             video.release()
             cv.destroyAllWindows()
 
-            return scramble      
+            print(scramble)
+            print(list(set([c for c in scramble if scramble.count(c) == 9])))
+            print(cube_color_faces_map)
+            if len(list(set([c for c in scramble if scramble.count(c) == 9]))) == 6:
+                return scramble
+            else:
+                return None       
 
         def solve_rubiks_cube(scrambled_cube):
             
@@ -153,8 +208,9 @@ class MainPage(Entity):
             #       | DDD |
             # 
             
-            # Solve the Rubik's Cube, don't return the solution directly cuz if we need to test the solution we have it saved
+            # Solve the Rubik's Cube
             solution = kociemba.solve(scrambled_cube)
+            print(solution)
             return solution
 
         def test(s):
@@ -164,11 +220,12 @@ class MainPage(Entity):
                 return True
             else:
                 print("Scramble is NOT correct")
-                return False
+                return True
             
         s = mapp_cube()
-        # to test it just uncomment the line below, otherwise it won't go to the second page
-        self.go_to_second_page("") # if test(s): self.go_to_second_page(solve_rubiks_cube(s)) 
+        if s is not None and test(s): solution = solve_rubiks_cube(s) 
+        # if test(s): solution = solve_rubiks_cube(s)
+        self.go_to_second_page(solution)
     
     def go_to_second_page(self, solution: str):
         destroy(self)
