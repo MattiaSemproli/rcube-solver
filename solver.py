@@ -1,6 +1,6 @@
 from ursina import *
 
-class SecondPage(Entity):
+class MainPage(Entity):
     def __init__(self, steps: str):
         super().__init__()
         steps = "U F2 U' F' L' U' B R' D' F R' U' R2 F2 U B2 R2 U2 F2 R2 U'"
