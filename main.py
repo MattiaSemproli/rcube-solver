@@ -151,21 +151,15 @@ def run():
         # 
         
         # Solve the Rubik's Cube, don't return the solution directly cuz if we need to test the solution we have it saved
-        solution = kociemba.solve(scrambled_cube)
-        return solution
-
-    def test(s):
-        scramble = "LURRUFFUBURFDRDRBDDLLDFLLFBDLUFDUFLBUBLFLRRUBDRFBBDRBU"
-        if s == scramble:
-            print("Scramble is correct")
-            return True
-        else:
-            print("Scramble is NOT correct")
-            return False
+        try:
+            solution = kociemba.solve(scrambled_cube)
+            return solution
+        except Exception as e:
+            return ""
         
     s = mapp_cube()
     # to test it just uncomment the line below, otherwise it won't go to the second page
-    go_to_main_page("") # if test(s): self.go_to_second_page(solve_rubiks_cube(s)) 
+    go_to_main_page(solve_rubiks_cube(s)) # if test(s): self.go_to_second_page(solve_rubiks_cube(s)) 
             
 def go_to_main_page(solution: str):
     app = Ursina()
