@@ -36,11 +36,11 @@ class MainPage(Entity):
                     rotate_side(Vec3(0,0,1), direction, speed=0)
 
         cube_colors = [
-            color.red,  # right
-            color.orange,   # left
-            color.yellow,    # top
+            color.red,     # right
+            color.orange,  # left
+            color.yellow,  # top
             color.white,   # bottom
-            color.green,    # back
+            color.green,   # back
             color.blue,    # front
         ]
 
