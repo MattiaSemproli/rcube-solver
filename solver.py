@@ -4,9 +4,13 @@ class MainPage(Entity):
     def __init__(self, steps: str):
         super().__init__()
         steps = "U F2 U' F' L' U' B R' D' F R' U' R2 F2 U B2 R2 U2 F2 R2 U'"
-        scramble = "U R2 F2 U2 R2 B2 U' F2 R2 U R F' D R B' U L F U F2 U'"
+        scramble = steps.split(' ')[::-1]
+        for (i, step) in enumerate(scramble):
+            if "'" in step: 
+                scramble[i] = step[0]
+            elif "2" not in step: 
+                scramble[i] = step + "'"
         steps = steps.split(' ')
-        scramble = scramble.split(' ')
         
         def randomize():
             while len(scramble) > 0:
