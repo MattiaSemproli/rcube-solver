@@ -218,7 +218,8 @@ def run():
         cv.imshow("frame", frame)
         
         # Display the 3x3 grid view in a new window
-        cv.imshow("3x3 Grid View", grid_view)
+        # NOTE: uncomment the following line to see the 3x3 grid view
+        # cv.imshow("3x3 Grid View", grid_view)
 
         # Display the cube with the faces that are being mapped in real-time
         cube_image = draw_cube(faces)
@@ -297,10 +298,15 @@ def run():
         elif key in [ord("l"), ord("f"), ord("r"), ord("b"), ord("u"), ord("d")]:
             # If the letter of the face is pressed, reset the face to be remapped
             color_face = face_letter_to_color_name[chr(key).upper()]
-            faces[color_face] = ""
-            print(f"{INFO}Resetting {color_face} face...")
-            # Decrement the number of faces mapped
-            number_of_face_mapped -= 1 if number_of_face_mapped > 0 else 0
+            # Check if the face is not already empty
+            if faces[color_face] == "":
+                print(f"{ERROR}The {color_face} face is not mapped yet")
+            else:
+                faces[color_face] = ""
+                number_of_face_mapped -= 1 if number_of_face_mapped > 0 else 0
+                print(f"{INFO}Resetting {color_face} face...")
+                print(f"{INFO}Now there are {number_of_face_mapped} faces mapped")
+                # Decrement the number of faces mapped
         elif number_of_face_mapped == 6:
             # If the number of faces mapped is 6, the cube is mapped
             print(f"{DEBUG}{faces}")
@@ -328,10 +334,12 @@ def run():
     video.release()
     cv.destroyAllWindows()
 
-    app = Ursina()
-    from solver import MainPage
-    MainPage(solution)
-    app.run()
+    # If the solution is not empty, run the application with the 3D cube
+    if solution != "":
+        app = Ursina()
+        from solver import MainPage
+        MainPage(solution)
+        app.run()
 
 # Run the application
 if __name__ == "__main__":
