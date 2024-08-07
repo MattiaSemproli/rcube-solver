@@ -3,6 +3,7 @@ import numpy as np
 import kociemba
 from collections import Counter
 import colorama
+from ursina import *
 
 # Define the colors for better visualization
 colorama.init(autoreset=True)
@@ -326,6 +327,11 @@ def run():
     # Release the video capture and close all windows       
     video.release()
     cv.destroyAllWindows()
+
+    app = Ursina()
+    from solver import MainPage
+    MainPage(solution)
+    app.run()
 
 # Run the application
 if __name__ == "__main__":
