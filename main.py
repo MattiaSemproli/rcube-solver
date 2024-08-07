@@ -4,6 +4,33 @@ import cv2 as cv
 import kociemba
 
 video = cv.VideoCapture("test.mp4") # 0 is the default camera, "video.mp4" is the video file
+video = cv.VideoCapture(0)
+
+color = {
+            'red'    : (0,0,255),
+            'orange' : (0,165,255),
+            'blue'   : (255,0,0),
+            'green'  : (0,255,0),
+            'white'  : (255,255,255),
+            'yellow' : (0,255,255)
+        }
+
+def color_detect(h,s,v):
+    # print(h,s,v)
+    if h < 5 and s>5 :
+        return 'red'
+    elif h <10 and h>=3:
+        return 'orange'
+    elif h <= 25 and h>10:
+        return 'yellow'
+    elif h>=70 and h<= 85 and s>100 and v<180:
+        return 'green'
+    elif h <= 130 and s>70:
+        return 'blue'
+    elif h <= 100 and s<10 and v<200:
+        return 'white'
+
+    return 'white'
 
 def run():
     def draw_framing_roi(copy):
@@ -54,6 +81,14 @@ def run():
         # overwrite the section of the background image that has been updated
         copy2[top_left[1]:bottom_right[1], top_left[0]:bottom_right[0]] = composite
         
+        cv.imshow("mask", mask)
+        cv.imshow("alpha", alpha_channel)
+        cv.imshow("alpha_mask", alpha_mask)
+        cv.imshow("background_subsection", background_subsection)
+        cv.imshow("composite", composite)
+        cv.imshow("copy2", copy2)
+
+
         return background_subsection
 
     def draw_roi_cells(roi):
@@ -67,13 +102,23 @@ def run():
                     peri = cv.arcLength(c, True)
                     approx = cv.approxPolyDP(c, 0.02 * peri, True)
                     if len(approx) == 4:
-                        cv.drawContours(roi, c, -1, (255, 255, 255), 2)
+                        #cv.drawContours(roi, c, -1, (255, 255, 255), 2)
                         x, y, w, h = cv.boundingRect(approx)
-                        cells[f"X{len(contours) - i}"] = (x, y, w, h)
+                        #cells[f"X{len(contours) - i}"] = (x, y, w, h)
+                        reduction = 15  # La quantità di pixel da ridurre su ciascun lato
+                        new_w = w - 2 * reduction
+                        new_h = h - 2 * reduction
+                        new_x = x + reduction
+                        new_y = y + reduction
+
+                        # Disegna i contorni ridotti
+                        cv.rectangle(roi, (new_x, new_y), (new_x + new_w, new_y + new_h), (255, 255, 255), 2)
+                        
+                        cells[f"X{len(contours) - i}"] = (new_x, new_y, new_w, new_h)
 
         for k, v in cells.items():
             x, y, w, h = v
-            cv.putText(roi, k, (int(x+w/2-20), int(y+h/2+10)), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 4)
+            cv.putText(roi, k, (int(x+w/2-10), int(y+h/2+5)), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 2)
             # CONVERTO TO RGB OR HSV OR WHATEVER COLOR SPACE I WANT
             # rois = cv.cvtColor(roi.copy(), cv.COLOR_BGR2RGB)[y:y+h, x:x+w]
         
@@ -159,7 +204,7 @@ def run():
         
     s = mapp_cube()
     # to test it just uncomment the line below, otherwise it won't go to the second page
-    go_to_main_page(solve_rubiks_cube(s)) # if test(s): self.go_to_second_page(solve_rubiks_cube(s)) 
+    # go_to_main_page(solve_rubiks_cube(s)) # if test(s): self.go_to_second_page(solve_rubiks_cube(s)) 
             
 def go_to_main_page(solution: str):
     app = Ursina()
