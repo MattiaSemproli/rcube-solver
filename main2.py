@@ -227,7 +227,7 @@ def run():
         #                          Red, Red, Red
         #                          Red, Red, Red
         # for i in range(3):
-        #     print(detected_colors[i*3:i*3+3])
+        #     print(f"{DEBUG}{detected_colors[i*3:i*3+3]}")
         # print()
 
         # Initialize the mapped face in this frame
@@ -247,7 +247,7 @@ def run():
                 mapped_face += face_letter
                 # print the face letter
                 # NOTE: uncomment the following lines to see the face letters
-        #         print(face_letter, end=' ')
+        #         print(f"{DEBUG}{face_letter}", end=' ')
         #     print()
         # print()
 
@@ -284,14 +284,14 @@ def run():
         key = cv.waitKey(1) & 0xFF
         if key == ord("q"):
             # If the 'q' key is pressed, print the mapping and the faces and exit the loop
-            print(mapping)
-            print(faces)
-            print("Exiting...")
+            print(f"{DEBUG}{mapping}")
+            print(f"{DEBUG}{faces}")
+            print(f"{INFO}Exiting...")
             break
         elif key == ord("s"):
             # If the 's' key is pressed, save the screenshot of the grid view and exit the loop
             cv.imwrite("screenshot.png", grid_view)
-            print("Screenshot saved! Now exiting...")
+            print(f"{INFO}Screenshot saved! Now exiting...")
             break
         elif key in [ord("l"), ord("f"), ord("r"), ord("b"), ord("u"), ord("d")]:
             # If the letter of the face is pressed, reset the face to be remapped
@@ -300,8 +300,8 @@ def run():
             print(f"{INFO}Resetting {color_face} face...")
         elif number_of_face_mapped == 6:
             # If the number of faces mapped is 6, the cube is mapped
-            print(faces)
-            print("Mapped!")
+            print(f"{DEBUG}{faces}")
+            print(f"{SUCCESS}Mapped!")
 
             # Get the string representing the cube state by joining the faces values
             string_to_solve = "".join(faces.values())
@@ -317,10 +317,9 @@ def run():
                     print(f"{SUCCESS}Solution: {solution}")
                     break
                 else:
-                    print("Invalid cube state: less or more than 9 occurrences of some colors are found")
+                    print(f"{ERROR}Invalid cube state: less or more than 9 occurrences of some colors are found")
             else:
-                print("Invalid cube state: less or more than 6 colors are found")
-            break
+                print(f"{ERROR}Invalid cube state: less or more than 6 colors are found")
 
     # Release the video capture and close all windows       
     video.release()
