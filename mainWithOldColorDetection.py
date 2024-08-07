@@ -4,6 +4,7 @@ import cv2 as cv
 import kociemba
 
 video = cv.VideoCapture("test.mp4") # 0 is the default camera, "video.mp4" is the video file
+video = cv.VideoCapture(0)
 
 
 cube_color_faces_map = []

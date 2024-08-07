@@ -6,6 +6,7 @@ from sklearn.cluster import KMeans
 from scipy.spatial import distance
 
 video = cv.VideoCapture("test.mp4") # 0 is the default camera, "video.mp4" is the video file
+video = cv.VideoCapture(0)
 
 def run():
     # Lista di colori predefiniti con i loro valori RGB
