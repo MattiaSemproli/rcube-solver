@@ -5,6 +5,7 @@ from collections import Counter
 import colorama
 
 # Define the colors for better visualization
+colorama.init(autoreset=True)
 ERROR = colorama.Fore.RED
 SUCCESS = colorama.Fore.GREEN
 INFO = colorama.Fore.CYAN
@@ -244,9 +245,10 @@ def run():
                 # append the face letter to the mapped face
                 mapped_face += face_letter
                 # print the face letter
-                print(face_letter, end=' ')
-            print()
-        print()
+                # NOTE: uncomment the following lines to see the face letters
+        #         print(face_letter, end=' ')
+        #     print()
+        # print()
 
         # Check if the mapped face is in the mapping
         if mapped_face in mapping:
