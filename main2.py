@@ -1,5 +1,14 @@
 import cv2 as cv
 import numpy as np
+import kociemba
+from collections import Counter
+import colorama
+
+# Define the colors for better visualization
+ERROR = colorama.Fore.RED
+SUCCESS = colorama.Fore.GREEN
+INFO = colorama.Fore.CYAN
+DEBUG = colorama.Fore.YELLOW
 
 # If you want to use the default camera, use 1, if you want to use a video file, use the file name
 # Comment out the one you don't want to use
