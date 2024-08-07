@@ -151,6 +151,7 @@ def run():
     # number_of_face_mapped is the number of faces that have been mapped so far
     mapping = {}
     number_of_face_mapped = 0
+    solution = ""
 
     # Loop through the video frames
     while True:
@@ -312,7 +313,9 @@ def run():
                 # Check if each letter has exactly 9 occurrences
                 if all(count == 9 for count in tmp_letter_counts.values()):
                     # The cube state mapping is valid, so solve the cube using the Kociemba algorithm
-                    print("Solution: ", kociemba.solve(string_to_solve))
+                    solution = kociemba.solve(string_to_solve)
+                    print(f"{SUCCESS}Solution: {solution}")
+                    break
                 else:
                     print("Invalid cube state: less or more than 9 occurrences of some colors are found")
             else:
