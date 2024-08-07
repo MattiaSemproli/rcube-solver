@@ -47,7 +47,62 @@ face_letter_to_color_name = {
     'D': 'White',
     'L': 'Orange'
 }
+
+# Mappa lettere a colori
+color_map = {
+    'R': (0, 0, 255),  # Rosso
+    'U': (0, 255, 255),  # Giallo
+    'B': (0, 255, 0),  # Verde
+    'F': (255, 0, 0),  # Blu
+    'D': (255, 255, 255),  # Bianco
+    'L': (0, 165, 255),  # Arancione
+    '': (255, 255, 255)  # Colore di default (bianco) per celle vuote
 }
+
+# We draw the face with the colors that are being mapped in real-time
+def draw_face(image, start_x, start_y, face_str):
+    # The size of each cell is 50x50 pixels
+    cell_size = 50
+    for i in range(3):
+        for j in range(3):
+            # Get the color of the cell
+            color = color_map[face_str[i*3 + j] if face_str else '']
+            top_left = (start_x + j * cell_size, start_y + i * cell_size)
+            bottom_right = (start_x + (j + 1) * cell_size, start_y + (i + 1) * cell_size)
+            # Fill the cell with the color (-1 at the end means fill the rectangle)
+            cv.rectangle(image, top_left, bottom_right, color, -1)
+            # Black border around the cell
+            cv.rectangle(image, top_left, bottom_right, (0, 0, 0), 1)
+
+# Function to draw the cube with the faces that are being mapped in real-time
+def draw_cube(faces):
+    # Each face is 150x150 pixels
+    image_size = 150
+    # The window is 600x450 pixels cause we have 4 faces in a row and 3 faces in a column
+    full_width = image_size * 4
+    full_height = image_size * 3
+    # Create a white image
+    image = np.ones((full_height, full_width, 3), dtype=np.uint8) * 255
+
+    # We draw the 4 faces in row
+    # Orange, Blue, Red, Green
+    draw_face(image, 0, image_size, faces['Orange'])
+    draw_face(image, image_size, image_size, faces['Blue'])
+    draw_face(image, image_size * 2, image_size, faces['Red'])
+    draw_face(image, image_size * 3, image_size, faces['Green'])
+
+    # We draw the 2 faces in column
+    # Yellow
+    # Blue (in my case, it's the front face)
+    # White
+    draw_face(image, image_size, 0, faces['Yellow'])
+    draw_face(image, image_size, image_size * 2, faces['White'])
+
+    # Result:
+    #         Yellow
+    # Orange, Blue, Red, Green
+    #         White
+    return image
 
 # Function to detect the color of the region of interest (ROI)
 def detect_color(hsv_roi):
@@ -161,6 +216,10 @@ def run():
         
         # Display the 3x3 grid view in a new window
         cv.imshow("3x3 Grid View", grid_view)
+
+        # Display the cube with the faces that are being mapped in real-time
+        cube_image = draw_cube(faces)
+        cv.imshow("Cube", cube_image)
 
         # Print detected colors as Red, Red, Red
         #                          Red, Red, Red
