@@ -21,12 +21,12 @@ min_occurrences = 100
 
 # Dictionary to store the faces of the cube
 faces = {
-    'Red': "",
     'Yellow': "",
-    'Green': "",
+    'Red': "",
     'Blue': "",
     'White': "",
-    'Orange': ""
+    'Orange': "",
+    'Green': ""
 }
 
 # Dictionary to store the mapping of the colors to the corresponding letter of the face
