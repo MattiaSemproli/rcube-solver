@@ -15,6 +15,10 @@ DEBUG = colorama.Fore.YELLOW
 # video = cv.VideoCapture("test.mp4")
 video = cv.VideoCapture(1)
 
+# Minimum number of occurrences of a color mapped face to be considered
+min_occurrences = 100
+
+# Dictionary to store the faces of the cube
 faces = {
     'Red': "",
     'Yellow': "",
@@ -24,17 +28,36 @@ faces = {
     'Orange': ""
 }
 
+# Dictionary to store the mapping of the colors to the corresponding letter of the face
 color_name_to_face_letter = {
-    'Red': 'R',
     'Yellow': 'U',
-    'Green': 'B',
+    'Red': 'R',
     'Blue': 'F',
     'White': 'D',
-    'Orange': 'L'
+    'Orange': 'L',
+    'Green': 'B'
 }
 
+# Dictionary to store the mapping of the letter of the face to the corresponding color
+face_letter_to_color_name = {
+    'R': 'Red',
+    'U': 'Yellow',
+    'B': 'Green',
+    'F': 'Blue',
+    'D': 'White',
+    'L': 'Orange'
+}
+}
+
+# Function to detect the color of the region of interest (ROI)
 def detect_color(hsv_roi):
     # Define color ranges in HSV
+    # The ranges are defined as a tuple of two lists: the lower and upper bounds of the color range
+    # The color ranges are defined for the following colors: Red, Yellow, Green, Blue, White, Orange
+    # The ranges are defined in the following format: ([H_min, S_min, V_min], [H_max, S_max, V_max])
+    # Red color is a special case because it wraps around the 0-180 range in HSV
+    # White color is also a special case because it has a low saturation and high value
+    # Orange is missing because it was mistakenly detected as Red, so it is treated by exclusion as the last case
     color_ranges = {
         'Red': ([0, 50, 50], [5, 255, 255]),
         'Red2': ([175, 50, 50], [180, 255, 255]),
@@ -46,29 +69,43 @@ def detect_color(hsv_roi):
     }
 
     # Calculate the median color of the ROI
+    # The median color is used to determine the color of the ROI
     median_color = np.median(hsv_roi, axis=(0, 1)).astype(int)
 
+    # Check the median color against the color ranges
     for color_name, (lower, upper) in color_ranges.items():
         lower = np.array(lower)
         upper = np.array(upper)
+        # Check if the median color is within the color range
         if cv.inRange(np.array([[median_color]]), lower, upper):
+            # Return the color name
+            # If the color is Red2 or White2, return Red or White respectively
             if color_name == 'Red2':
                 return 'Red'
             elif color_name == 'White2':
                 return 'White'
             return color_name
+    # If the color is not Red, Yellow, Green, Blue, White, return Orange
     return 'Orange'
 
+# Function to run the color detection and face mapping
 def run():
+    # Dictionary to store the mapping
+    # The key is the mapped face, and the value is the number of occurrences
+    # number_of_face_mapped is the number of faces that have been mapped so far
+    mapping = {}
+    number_of_face_mapped = 0
+
+    # Loop through the video frames
     while True:
+        # Read the next frame
         ret, frame = video.read()
+        # If the frame is empty, break the loop
         if not ret:
             break
 
+        # Make a copy of the frame
         copy = frame.copy()
-
-        # Convert the frame to HSV color space
-        hsv_frame = cv.cvtColor(copy, cv.COLOR_BGR2HSV)
 
         # Get the dimensions of the frame
         height, width, _ = frame.shape
@@ -99,7 +136,8 @@ def run():
                 # Draw the smaller square in the original frame
                 cv.rectangle(frame, small_top_left, small_bottom_right, (0, 255, 0), 1)
                 
-                # Extract the region of interest (ROI) from the original frame
+                # Extract the region of interest (ROI) from the copy of the frame
+                # so we don't see the rectangles from the grid view in the original frame
                 roi = copy[small_top_left[1]:small_bottom_right[1], small_top_left[0]:small_bottom_right[0]]
                 
                 # Convert the ROI to HSV
@@ -131,26 +169,95 @@ def run():
         #     print(detected_colors[i*3:i*3+3])
         # print()
 
+        # Initialize the mapped face in this frame
+        mapped_face = ""
+
         # Print detected colors as R U F
         #                          U F R
         #                          R F U
+        # Iterate through the detected colors of the map (3x3 grid of cells)
         for i in range(3):
             for j in range(3):
+                # get the color of a single cell
                 color = detected_colors[i*3 + j]
+                # get the corresponding face letter
                 face_letter = color_name_to_face_letter[color]
+                # append the face letter to the mapped face
+                mapped_face += face_letter
+                # print the face letter
                 print(face_letter, end=' ')
             print()
         print()
+
+        # Check if the mapped face is in the mapping
+        if mapped_face in mapping:
+            # Increment the occurrence
+            mapping[mapped_face] += 1
+        else:
+            # Add the mapped face to the mapping with an occurrence of 1
+            mapping[mapped_face] = 1
+
+        # Check if the number of occurrences of the mapped face is greater than or equal to the minimum occurrences required
+        for face, occurrences in mapping.items():
+            if occurrences >= min_occurrences:
+                # Get the color name of the central cell of the face to identify which face it is
+                # For example:
+                #
+                #     R U F
+                #     U F R
+                #     R F U
+                #
+                # The central cell of the face is F which corresponds to the color Blue
+                # So we know that we are mapping the Blue face
+                c_name = face_letter_to_color_name[face[4]]
+                # Check if the face is not already mapped
+                if faces[c_name] == "" and c_name in faces:
+                    # Map the colors to the face corresponding to the color name
+                    faces[c_name] = face
+                    # Empty the mapping and increment the number of faces mapped
+                    mapping = {}
+                    number_of_face_mapped += 1
         
+        # Check for key presses
         key = cv.waitKey(1) & 0xFF
         if key == ord("q"):
+            # If the 'q' key is pressed, print the mapping and the faces and exit the loop
+            print(mapping)
+            print(faces)
+            print("Exiting...")
             break
         elif key == ord("s"):
+            # If the 's' key is pressed, save the screenshot of the grid view and exit the loop
             cv.imwrite("screenshot.png", grid_view)
+            print("Screenshot saved! Now exiting...")
             break
-        
+        elif number_of_face_mapped == 6:
+            # If the number of faces mapped is 6, the cube is mapped
+            print(faces)
+            print("Mapped!")
+
+            # Get the string representing the cube state by joining the faces values
+            string_to_solve = "".join(faces.values())
+
+            # Get the letter counts of the string
+            tmp_letter_counts = Counter(string_to_solve)
+            # Check if the letter counts is exactly 6
+            if len(tmp_letter_counts) == 6:
+                # Check if each letter has exactly 9 occurrences
+                if all(count == 9 for count in tmp_letter_counts.values()):
+                    # The cube state mapping is valid, so solve the cube using the Kociemba algorithm
+                    print("Solution: ", kociemba.solve(string_to_solve))
+                else:
+                    print("Invalid cube state: less or more than 9 occurrences of some colors are found")
+            else:
+                print("Invalid cube state: less or more than 6 colors are found")
+            break
+
+    # Release the video capture and close all windows       
     video.release()
     cv.destroyAllWindows()
 
+# Run the application
 if __name__ == "__main__":
+    # Run method
     run()
