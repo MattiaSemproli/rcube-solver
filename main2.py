@@ -6,10 +6,10 @@ import colorama
 
 # Define the colors for better visualization
 colorama.init(autoreset=True)
-ERROR = colorama.Fore.RED
-SUCCESS = colorama.Fore.GREEN
-INFO = colorama.Fore.CYAN
-DEBUG = colorama.Fore.YELLOW
+ERROR = "{ERROR}   : " + colorama.Fore.RED
+SUCCESS = "{SUCCESS} : " + colorama.Fore.GREEN
+INFO = "{INFO}    : " + colorama.Fore.CYAN
+DEBUG = "{DEBUG}   : " + colorama.Fore.YELLOW
 
 # If you want to use the default camera, use 1, if you want to use a video file, use the file name
 # Comment out the one you don't want to use
