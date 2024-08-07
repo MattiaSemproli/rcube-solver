@@ -292,6 +292,11 @@ def run():
             cv.imwrite("screenshot.png", grid_view)
             print("Screenshot saved! Now exiting...")
             break
+        elif key in [ord("l"), ord("f"), ord("r"), ord("b"), ord("u"), ord("d")]:
+            # If the letter of the face is pressed, reset the face to be remapped
+            color_face = face_letter_to_color_name[chr(key).upper()]
+            faces[color_face] = ""
+            print(f"{INFO}Resetting {color_face} face...")
         elif number_of_face_mapped == 6:
             # If the number of faces mapped is 6, the cube is mapped
             print(faces)
