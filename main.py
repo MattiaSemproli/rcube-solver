@@ -12,13 +12,11 @@ SUCCESS = "{SUCCESS} : " + colorama.Fore.GREEN
 INFO = "{INFO}    : " + colorama.Fore.CYAN
 DEBUG = "{DEBUG}   : " + colorama.Fore.YELLOW
 
-# If you want to use the default camera, use 1, if you want to use a video file, use the file name
-# Comment out the one you don't want to use
-# video = cv.VideoCapture("test.mp4")
-video = cv.VideoCapture(1)
+# Initialize the video capture
+video = cv.VideoCapture(0)
 
 # Minimum number of occurrences of a color mapped face to be considered
-min_occurrences = 100
+MIN_OCCURRENCES = 100
 
 # Dictionary to store the faces of the cube
 faces = {
@@ -30,7 +28,7 @@ faces = {
     'Green': ""
 }
 
-# Dictionary to store the mapping of the colors to the corresponding letter of the face
+# Dictionary for converting the color name to the corresponding letter of the face
 color_name_to_face_letter = {
     'Yellow': 'U',
     'Red': 'R',
@@ -40,7 +38,7 @@ color_name_to_face_letter = {
     'Green': 'B'
 }
 
-# Dictionary to store the mapping of the letter of the face to the corresponding color
+# Dictionary for converting the letter of the face to the corresponding color name
 face_letter_to_color_name = {
     'R': 'Red',
     'U': 'Yellow',
@@ -50,36 +48,53 @@ face_letter_to_color_name = {
     'L': 'Orange'
 }
 
-# Mappa lettere a colori
+# Color map
 color_map = {
-    'R': (0, 0, 255),  # Rosso
-    'U': (0, 255, 255),  # Giallo
-    'B': (0, 255, 0),  # Verde
-    'F': (255, 0, 0),  # Blu
-    'D': (255, 255, 255),  # Bianco
-    'L': (0, 165, 255),  # Arancione
-    '': (255, 255, 255)  # Colore di default (bianco) per celle vuote
+    'R': (0, 0, 255),  # Red
+    'U': (0, 255, 255),  # Yellow
+    'B': (0, 255, 0),  # Green
+    'F': (255, 0, 0),  # Blue
+    'D': (255, 255, 255),  # White
+    'L': (0, 165, 255),  # Orange
+    '': (255, 255, 255)  # Empty cell default color white
 }
 
-# We draw the face with the colors that are being mapped in real-time
-def draw_face(image, start_x, start_y, face_str):
+# The ranges are defined in HSV as a tuple of two lists: the lower and upper bounds of the color range
+# Red color --> it wraps around the 0-180 range in HSV, so for better detection, we have two ranges
+# White color --> low saturation and high value, so for better detection, we have two ranges
+# Orange color --> it was often mistakenly detected as Red, so we treat it by exclusion as the last color
+color_ranges = {
+    'Red': ([0, 50, 50], [5, 255, 255]),
+    'Red2': ([175, 50, 50], [180, 255, 255]),
+    'Yellow': ([20, 70, 120], [35, 255, 255]),
+    'Green': ([35, 70, 70], [85, 255, 255]),
+    'Blue': ([85, 150, 50], [130, 255, 255]),
+    'White': ([0, 0, 200], [180, 30, 255]),
+    'White2': ([0, 0, 100], [180, 30, 200])
+}
+
+# Function to draw the face with the colors that are being mapped in real-time
+def draw_single_live_face(image, start_x, start_y, face_str):
     # The size of each cell is 50x50 pixels
     cell_size = 50
+
     for i in range(3):
         for j in range(3):
             # Get the color of the cell
             color = color_map[face_str[i*3 + j] if face_str else '']
             top_left = (start_x + j * cell_size, start_y + i * cell_size)
             bottom_right = (start_x + (j + 1) * cell_size, start_y + (i + 1) * cell_size)
+
             # Fill the cell with the color (-1 at the end means fill the rectangle)
             cv.rectangle(image, top_left, bottom_right, color, -1)
             # Black border around the cell
             cv.rectangle(image, top_left, bottom_right, (0, 0, 0), 1)
 
 # Function to draw the cube with the faces that are being mapped in real-time
-def draw_cube(faces):
+def draw_live_cube(faces):
     # Each face is 150x150 pixels
     image_size = 150
+
     # The window is 600x450 pixels cause we have 4 faces in a row and 3 faces in a column
     full_width = image_size * 4
     full_height = image_size * 3
@@ -88,17 +103,17 @@ def draw_cube(faces):
 
     # We draw the 4 faces in row
     # Orange, Blue, Red, Green
-    draw_face(image, 0, image_size, faces['Orange'])
-    draw_face(image, image_size, image_size, faces['Blue'])
-    draw_face(image, image_size * 2, image_size, faces['Red'])
-    draw_face(image, image_size * 3, image_size, faces['Green'])
+    draw_single_live_face(image, 0, image_size, faces['Orange'])
+    draw_single_live_face(image, image_size, image_size, faces['Blue'])
+    draw_single_live_face(image, image_size * 2, image_size, faces['Red'])
+    draw_single_live_face(image, image_size * 3, image_size, faces['Green'])
 
     # We draw the 2 faces in column
     # Yellow
     # Blue (in my case, it's the front face)
     # White
-    draw_face(image, image_size, 0, faces['Yellow'])
-    draw_face(image, image_size, image_size * 2, faces['White'])
+    draw_single_live_face(image, image_size, 0, faces['Yellow'])
+    draw_single_live_face(image, image_size, image_size * 2, faces['White'])
 
     # Result:
     #         Yellow
@@ -108,31 +123,14 @@ def draw_cube(faces):
 
 # Function to detect the color of the region of interest (ROI)
 def detect_color(hsv_roi):
-    # Define color ranges in HSV
-    # The ranges are defined as a tuple of two lists: the lower and upper bounds of the color range
-    # The color ranges are defined for the following colors: Red, Yellow, Green, Blue, White, Orange
-    # The ranges are defined in the following format: ([H_min, S_min, V_min], [H_max, S_max, V_max])
-    # Red color is a special case because it wraps around the 0-180 range in HSV
-    # White color is also a special case because it has a low saturation and high value
-    # Orange is missing because it was mistakenly detected as Red, so it is treated by exclusion as the last case
-    color_ranges = {
-        'Red': ([0, 50, 50], [5, 255, 255]),
-        'Red2': ([175, 50, 50], [180, 255, 255]),
-        'Yellow': ([20, 70, 120], [35, 255, 255]),
-        'Green': ([35, 70, 70], [85, 255, 255]),
-        'Blue': ([85, 150, 50], [130, 255, 255]),
-        'White': ([0, 0, 200], [180, 30, 255]),
-        'White2': ([0, 0, 100], [180, 30, 200])
-    }
-
     # Calculate the median color of the ROI
-    # The median color is used to determine the color of the ROI
     median_color = np.median(hsv_roi, axis=(0, 1)).astype(int)
 
     # Check the median color against the color ranges
     for color_name, (lower, upper) in color_ranges.items():
         lower = np.array(lower)
         upper = np.array(upper)
+
         # Check if the median color is within the color range
         if cv.inRange(np.array([[median_color]]), lower, upper):
             # Return the color name
@@ -142,10 +140,125 @@ def detect_color(hsv_roi):
             elif color_name == 'White2':
                 return 'White'
             return color_name
+    
     # If the color is not Red, Yellow, Green, Blue, White, return Orange
     return 'Orange'
 
-# Function to run the color detection and face mapping
+# Function to process a single frame
+def process_frame(frame):
+    # Make a copy of the frame
+    copy = frame.copy()
+
+    # Get the dimensions of the frame
+    height, width, _ = frame.shape
+    
+    # Define the size of the square that would have contained the 3x3 grid (e.g., 300x300 pixels)
+    square_size = 300
+    
+    # Calculate the size of each cell in the 3x3 grid
+    cell_size = square_size // 3
+
+    # Create an empty image for the 3x3 grid view
+    grid_view = np.zeros((square_size, square_size, 3), dtype=np.uint8)
+
+    # To store the detected colors
+    detected_colors = []
+
+    # Process each of the 9 cells in the 3x3 grid
+    for i in range(3):
+        for j in range(3):
+            # Calculate the top-left corner of the smaller square in the original frame
+            small_square_size = cell_size // 2
+            small_top_left = (width // 2 - square_size // 2 + j * cell_size + (cell_size - small_square_size) // 2,
+                                height // 2 - square_size // 2 + i * cell_size + (cell_size - small_square_size) // 2)
+            
+            # Calculate the bottom-right corner
+            small_bottom_right = (small_top_left[0] + small_square_size, small_top_left[1] + small_square_size)
+            
+            # Draw the smaller square in the original frame
+            cv.rectangle(frame, small_top_left, small_bottom_right, (0, 255, 0), 1)
+            
+            # Extract the region of interest (ROI) from the copy of the frame
+            # so we don't see the rectangles from the grid view in the original frame
+            roi = copy[small_top_left[1]:small_bottom_right[1], small_top_left[0]:small_bottom_right[0]]
+            
+            # Convert the ROI to HSV
+            hsv_roi = cv.cvtColor(roi, cv.COLOR_BGR2HSV)
+            
+            # Detect the color of the ROI
+            color = detect_color(hsv_roi)
+            detected_colors.append(color)
+            
+            # Annotate the detected color on the frame
+            cv.putText(frame, color, (small_top_left[0], small_top_left[1] - 10), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv.LINE_AA)
+            
+            # Resize the ROI to fit the grid cell size
+            resized_roi = cv.resize(roi, (cell_size, cell_size))
+            
+            # Place the resized ROI into the correct position in the grid view
+            grid_view[i*cell_size:(i+1)*cell_size, j*cell_size:(j+1)*cell_size] = resized_roi
+    
+    return detected_colors, frame, grid_view
+
+# Function to update the mapping of the faces
+def update_face_mapping(mapping, detected_colors):
+    # Build the mapped face by joining the detected colors
+    mapped_face = "".join(color_name_to_face_letter[color] for color in detected_colors)
+
+    # Check if the mapped face is in the mapping
+    if mapped_face in mapping:
+        # Increment the occurrence
+        mapping[mapped_face] += 1
+    else:
+        # Add the mapped face to the mapping with an occurrence of 1
+        mapping[mapped_face] = 1
+
+    return mapped_face
+
+# Function to check if there is a face that can be mapped based on the number of occurrences
+def check_face_mapping(mapping, faces, number_of_face_mapped):
+    # Check the number of occurrences
+    for face, occurrences in mapping.items():
+        if occurrences >= MIN_OCCURRENCES:
+            # Get the color name of the central cell of the face to identify which face it is
+            # For example:
+            #
+            #     R U F
+            #     U F R
+            #     R F U
+            #
+            # The central cell of the face is F which corresponds to the color Blue
+            # So we know that we are mapping the Blue face
+            c_name = face_letter_to_color_name[face[4]]
+
+            # Check if the face is not already mapped
+            if faces[c_name] == "" and c_name in faces:
+                # Map the colors to the face corresponding to the color name
+                faces[c_name] = face
+                # Empty the mapping and increment the number of faces mapped
+                mapping = {}
+                number_of_face_mapped += 1
+
+    return mapping, number_of_face_mapped
+
+# Function to check if the cube state is valid and solve it
+def solve_cube(faces):
+    # Get the string representing the cube state by joining the faces values
+    string_to_solve = "".join(faces.values())
+
+    # Get the letter counts of the string
+    tmp_letter_counts = Counter(string_to_solve)
+    # Check if the letter counts is exactly 6
+    if len(tmp_letter_counts) == 6 and all(count == 9 for count in tmp_letter_counts.values()):
+        solution = kociemba.solve(string_to_solve)
+        print(f"{SUCCESS}Solution: {solution}")
+        return solution
+    else:
+        print(f"{ERROR}Invalid cube state")
+
+    return ""
+
+# Main function of the application
 def run():
     # Dictionary to store the mapping
     # The key is the mapped face, and the value is the number of occurrences
@@ -156,131 +269,24 @@ def run():
 
     # Loop through the video frames
     while True:
-        # Read the next frame
         ret, frame = video.read()
-        # If the frame is empty, break the loop
         if not ret:
             break
-
-        # Make a copy of the frame
-        copy = frame.copy()
-
-        # Get the dimensions of the frame
-        height, width, _ = frame.shape
         
-        # Define the size of the square that would have contained the 3x3 grid (e.g., 300x300 pixels)
-        square_size = 300
-        
-        # Calculate the size of each cell in the 3x3 grid
-        cell_size = square_size // 3
-        
-        # Create an empty image for the 3x3 grid view
-        grid_view = np.zeros((square_size, square_size, 3), dtype=np.uint8)
-
-        # To store the detected colors
-        detected_colors = []
-
-        # Process each of the 9 cells in the 3x3 grid
-        for i in range(3):
-            for j in range(3):
-                # Calculate the top-left corner of the smaller square in the original frame
-                small_square_size = cell_size // 2
-                small_top_left = (width // 2 - square_size // 2 + j * cell_size + (cell_size - small_square_size) // 2,
-                                  height // 2 - square_size // 2 + i * cell_size + (cell_size - small_square_size) // 2)
-                
-                # Calculate the bottom-right corner
-                small_bottom_right = (small_top_left[0] + small_square_size, small_top_left[1] + small_square_size)
-                
-                # Draw the smaller square in the original frame
-                cv.rectangle(frame, small_top_left, small_bottom_right, (0, 255, 0), 1)
-                
-                # Extract the region of interest (ROI) from the copy of the frame
-                # so we don't see the rectangles from the grid view in the original frame
-                roi = copy[small_top_left[1]:small_bottom_right[1], small_top_left[0]:small_bottom_right[0]]
-                
-                # Convert the ROI to HSV
-                hsv_roi = cv.cvtColor(roi, cv.COLOR_BGR2HSV)
-                
-                # Detect the color of the ROI
-                color = detect_color(hsv_roi)
-                detected_colors.append(color)
-                
-                # Annotate the detected color on the frame
-                cv.putText(frame, color, (small_top_left[0], small_top_left[1] - 10), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1, cv.LINE_AA)
-                
-                # Resize the ROI to fit the grid cell size
-                resized_roi = cv.resize(roi, (cell_size, cell_size))
-                
-                # Place the resized ROI into the correct position in the grid view
-                grid_view[i*cell_size:(i+1)*cell_size, j*cell_size:(j+1)*cell_size] = resized_roi
+        detected_colors, frame, grid_view = process_frame(frame)
+        update_face_mapping(mapping, detected_colors)
+        mapping, number_of_face_mapped = check_face_mapping(mapping, faces, number_of_face_mapped)
 
         # Display the original frame with the smaller squares
-        cv.imshow("frame", frame)
+        cv.imshow(r"Color detection /\ rcube-solver", frame)
         
         # Display the 3x3 grid view in a new window
         # NOTE: uncomment the following line to see the 3x3 grid view
         # cv.imshow("3x3 Grid View", grid_view)
 
         # Display the cube with the faces that are being mapped in real-time
-        cube_image = draw_cube(faces)
-        cv.imshow("Cube", cube_image)
-
-        # Print detected colors as Red, Red, Red
-        #                          Red, Red, Red
-        #                          Red, Red, Red
-        # for i in range(3):
-        #     print(f"{DEBUG}{detected_colors[i*3:i*3+3]}")
-        # print()
-
-        # Initialize the mapped face in this frame
-        mapped_face = ""
-
-        # Print detected colors as R U F
-        #                          U F R
-        #                          R F U
-        # Iterate through the detected colors of the map (3x3 grid of cells)
-        for i in range(3):
-            for j in range(3):
-                # get the color of a single cell
-                color = detected_colors[i*3 + j]
-                # get the corresponding face letter
-                face_letter = color_name_to_face_letter[color]
-                # append the face letter to the mapped face
-                mapped_face += face_letter
-                # print the face letter
-                # NOTE: uncomment the following lines to see the face letters
-        #         print(f"{DEBUG}{face_letter}", end=' ')
-        #     print()
-        # print()
-
-        # Check if the mapped face is in the mapping
-        if mapped_face in mapping:
-            # Increment the occurrence
-            mapping[mapped_face] += 1
-        else:
-            # Add the mapped face to the mapping with an occurrence of 1
-            mapping[mapped_face] = 1
-
-        # Check if the number of occurrences of the mapped face is greater than or equal to the minimum occurrences required
-        for face, occurrences in mapping.items():
-            if occurrences >= min_occurrences:
-                # Get the color name of the central cell of the face to identify which face it is
-                # For example:
-                #
-                #     R U F
-                #     U F R
-                #     R F U
-                #
-                # The central cell of the face is F which corresponds to the color Blue
-                # So we know that we are mapping the Blue face
-                c_name = face_letter_to_color_name[face[4]]
-                # Check if the face is not already mapped
-                if faces[c_name] == "" and c_name in faces:
-                    # Map the colors to the face corresponding to the color name
-                    faces[c_name] = face
-                    # Empty the mapping and increment the number of faces mapped
-                    mapping = {}
-                    number_of_face_mapped += 1
+        cube_image = draw_live_cube(faces)
+        cv.imshow("Live mapped cube", cube_image)
         
         # Check for key presses
         key = cv.waitKey(1) & 0xFF
@@ -290,47 +296,38 @@ def run():
             print(f"{DEBUG}{faces}")
             print(f"{INFO}Exiting...")
             break
+
         elif key == ord("s"):
             # If the 's' key is pressed, save the screenshot of the grid view and exit the loop
             cv.imwrite("screenshot.png", grid_view)
+
             print(f"{INFO}Screenshot saved! Now exiting...")
             break
+
         elif key in [ord("l"), ord("f"), ord("r"), ord("b"), ord("u"), ord("d")]:
             # If the letter of the face is pressed, reset the face to be remapped
             color_face = face_letter_to_color_name[chr(key).upper()]
+            
             # Check if the face is not already empty
             if faces[color_face] == "":
                 print(f"{ERROR}The {color_face} face is not mapped yet")
             else:
+                mapping = {}
                 faces[color_face] = ""
-                # Decrement the number of faces mapped
                 number_of_face_mapped -= 1 if number_of_face_mapped > 0 else 0
+                
                 print(f"{INFO}Resetting {color_face} face...")
                 print(f"{INFO}Now there are {number_of_face_mapped} faces mapped")
+        
         elif number_of_face_mapped == 6:
             # If the number of faces mapped is 6, the cube is mapped
             print(f"{DEBUG}{faces}")
             print(f"{SUCCESS}Mapped!")
 
-            # Get the string representing the cube state by joining the faces values
-            string_to_solve = "".join(faces.values())
-
-            # Get the letter counts of the string
-            tmp_letter_counts = Counter(string_to_solve)
-            # Check if the letter counts is exactly 6
-            if len(tmp_letter_counts) == 6:
-                # Check if each letter has exactly 9 occurrences
-                if all(count == 9 for count in tmp_letter_counts.values()):
-                    # The cube state mapping is valid, so solve the cube using the Kociemba algorithm
-                    solution = kociemba.solve(string_to_solve)
-                    print(f"{SUCCESS}Solution: {solution}")
-                    break
-                else:
-                    print(f"{ERROR}Invalid cube state: less or more than 9 occurrences of some colors are found")
-            else:
-                print(f"{ERROR}Invalid cube state: less or more than 6 colors are found")
-
-    # Release the video capture and close all windows       
+            solution = solve_cube(faces)
+            if solution != "":
+                break
+            
     video.release()
     cv.destroyAllWindows()
 
@@ -343,5 +340,4 @@ def run():
 
 # Run the application
 if __name__ == "__main__":
-    # Run method
     run()
