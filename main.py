@@ -303,10 +303,10 @@ def run():
                 print(f"{ERROR}The {color_face} face is not mapped yet")
             else:
                 faces[color_face] = ""
+                # Decrement the number of faces mapped
                 number_of_face_mapped -= 1 if number_of_face_mapped > 0 else 0
                 print(f"{INFO}Resetting {color_face} face...")
                 print(f"{INFO}Now there are {number_of_face_mapped} faces mapped")
-                # Decrement the number of faces mapped
         elif number_of_face_mapped == 6:
             # If the number of faces mapped is 6, the cube is mapped
             print(f"{DEBUG}{faces}")
