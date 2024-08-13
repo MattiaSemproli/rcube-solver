@@ -62,15 +62,15 @@ color_map = {
 # The ranges are defined in HSV as a tuple of two lists: the lower and upper bounds of the color range
 # Red color --> it wraps around the 0-180 range in HSV, so for better detection, we have two ranges
 # White color --> low saturation and high value, so for better detection, we have two ranges
-# Orange color --> it was often mistakenly detected as Red, so we treat it by exclusion as the last color
 color_ranges = {
     'Red': ([0, 50, 50], [5, 255, 255]),
     'Red2': ([175, 50, 50], [180, 255, 255]),
-    'Yellow': ([20, 70, 120], [35, 255, 255]),
+    'Yellow': ([21, 70, 120], [35, 255, 255]),
     'Green': ([35, 70, 70], [85, 255, 255]),
     'Blue': ([85, 150, 50], [130, 255, 255]),
     'White': ([0, 0, 200], [180, 30, 255]),
-    'White2': ([0, 0, 100], [180, 30, 200])
+    'White2': ([0, 0, 100], [180, 30, 200]),
+    'Orange': ([10, 150, 150], [20, 255, 255])
 }
 
 # Function to draw the face with the colors that are being mapped in real-time
@@ -141,8 +141,8 @@ def detect_color(hsv_roi):
                 return 'White'
             return color_name
     
-    # If the color is not Red, Yellow, Green, Blue, White, return Orange
-    return 'Orange'
+    # If the color is not detected, return White
+    return 'White'
 
 # Function to process a single frame
 def process_frame(frame):
