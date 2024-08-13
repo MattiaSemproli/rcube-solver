@@ -65,12 +65,12 @@ color_map = {
 color_ranges = {
     'Red': ([0, 50, 50], [5, 255, 255]),
     'Red2': ([175, 50, 50], [180, 255, 255]),
-    'Yellow': ([21, 70, 120], [35, 255, 255]),
+    'Yellow': ([22, 70, 120], [35, 255, 255]),
     'Green': ([35, 70, 70], [85, 255, 255]),
     'Blue': ([85, 150, 50], [130, 255, 255]),
     'White': ([0, 0, 200], [180, 30, 255]),
     'White2': ([0, 0, 100], [180, 30, 200]),
-    'Orange': ([10, 150, 150], [20, 255, 255])
+    'Orange': ([10, 150, 150], [18, 255, 255])
 }
 
 # Function to draw the face with the colors that are being mapped in real-time
@@ -141,8 +141,8 @@ def detect_color(hsv_roi):
                 return 'White'
             return color_name
     
-    # If the color is not detected, return White
-    return 'White'
+    # If the color is not detected, return UNKNOWN
+    return 'UNKNOWN'
 
 # Function to process a single frame
 def process_frame(frame):
@@ -274,7 +274,8 @@ def run():
             break
         
         detected_colors, frame, grid_view = process_frame(frame)
-        update_face_mapping(mapping, detected_colors)
+        if 'UNKNOWN' not in detected_colors:
+            update_face_mapping(mapping, detected_colors)
         mapping, number_of_face_mapped = check_face_mapping(mapping, faces, number_of_face_mapped)
 
         # Display the original frame with the smaller squares
