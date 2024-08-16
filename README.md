@@ -29,7 +29,7 @@ pip install -r requirements.txt
 
 ## Video Demo
 
-[![Demo Video](demo_video_thumbnail.png)](<video controls src="demo-live-v1_0.mp4" title="path/to/demo-live-v1_0.mp4"></video>)
+[![Demo Video](demo_video_thumbnail.png)](demo-live-v1_0.mp4)
 
 ## Project Structure
 
