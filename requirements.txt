@@ -1,5 +1,0 @@
-colorama
-opencv-python
-kociemba
-numpy
-ursina
