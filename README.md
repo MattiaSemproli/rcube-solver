@@ -27,10 +27,6 @@ pip install -r requirements.txt
 4. **Solving the Cube:**
    The detected pattern is fed to the solver, which provides the sequence of moves to solve the Rubik's cube.
 
-## Video Demo
-
-[![Demo Video](demo_video_thumbnail.png)](demo-live-v1_0.mp4)
-
 ## Project Structure
 
 - `main.py`: Contains the main logic for capturing the video feed, detecting colors, and interfacing with the solver.
