@@ -11,6 +11,10 @@ class MainPage(Entity):
                 scramble[i] = step + "'"
         steps = steps.split(' ')
         
+        self.solutionSequence = [elem for step in steps for elem in ([step[0], step[0]] if "2" in step else [step])]
+        self.text_entities = []
+        self.current_move_index = 1
+        
         self.timer = 0
         self.dots_count = 0
         self.max_dots = 3
@@ -141,16 +145,57 @@ class MainPage(Entity):
         def reset_rotation_helper():
             [setattr(e, 'world_parent', scene) for e in cubes]
             rotation_helper.rotation = (0,0,0)
+        
+        def initialize_text_entities():
+            total_width = len(self.solutionSequence) * 0.1
+            x_offset = -total_width / 2
 
-        self.win_text_entity = Text(y=.35, text='Solving ...', color=color.white, origin=(0,0), scale=2, font='VeraMono.ttf')
+            self.text_entities.append(Text(text=''))
 
-        win_text_entity = Text(y=.35, text='', color=color.green, origin=(0,0), scale=3)
+            for s in self.solutionSequence:
+                t = Text(y=.35, text=s, color=color.white, origin=(0, 0), scale=1.5, font='VeraMono.ttf', x=x_offset)
+                self.text_entities.append(t)
+            
+            self.text_entities.append(Text(text=''))
+
+        def cycle_scale():
+            for t in self.text_entities:
+                t.scale = 0
+                t.color = color.white
+            
+            prev_index = self.current_move_index - 1
+            next_index = self.current_move_index + 1
+
+            x_prev = -0.1
+            x_center = 0
+            x_next = 0.1
+            
+            # Previous move
+            self.text_entities[prev_index].scale = 1.5
+            self.text_entities[prev_index].x = x_prev
+
+            # Current move
+            self.text_entities[self.current_move_index].scale = 3
+            self.text_entities[self.current_move_index].x = x_center
+            self.text_entities[self.current_move_index].color = color.gold
+
+            # Next move
+            self.text_entities[next_index].scale = 1.5
+            self.text_entities[next_index].x = x_next
+
+            self.current_move_index = self.current_move_index + 1 if self.current_move_index < len(self.text_entities) - 2 else self.current_move_index
+
+        self.solving_text = Text(y=-.40, text='Solving ...', color=color.white, origin=(0,0), scale=2, font='VeraMono.ttf')
+        initialize_text_entities()
+        cycle_scale()
 
         def check_for_win():
             if {e.world_rotation for e in cubes} == {Vec3(0,0,0)}:
-                self.win_text_entity.text = 'SOLVED!'
-                self.win_text_entity.appear()
+                win_text_entity = Text(y=.35, text='SOLVED!', color=color.green, origin=(0,0), scale=2, font='VeraMono.ttf')
+                win_text_entity.appear()
                 self.isCompleted = True
+            if self.current_move_index < len(self.text_entities):
+                cycle_scale()
 
         randomize()
 
@@ -163,5 +208,9 @@ class MainPage(Entity):
         if not self.isCompleted:
             if self.timer > 0.5:
                 self.dots_count = (self.dots_count + 1) % (self.max_dots + 1)
-                self.win_text_entity.text = f'Solving{"." * self.dots_count}'
+                self.solving_text.text = f'Solving{"." * self.dots_count}'
                 self.timer = 0
+        else:
+            self.solving_text.text = ''
+            for t in self.text_entities:
+                t.scale = 0
