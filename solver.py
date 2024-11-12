@@ -11,6 +11,11 @@ class MainPage(Entity):
                 scramble[i] = step + "'"
         steps = steps.split(' ')
         
+        self.timer = 0
+        self.dots_count = 0
+        self.max_dots = 3
+        self.isCompleted = False
+
         def randomize():
             while len(scramble) > 0:
                 move = scramble.pop(0)
@@ -95,9 +100,7 @@ class MainPage(Entity):
 
         collider.input = collider_input
 
-
         rotation_helper = Entity()
-
 
         def rotate_side(normal, direction=1, speed=1):
             # red side (RIGHT)
@@ -135,22 +138,30 @@ class MainPage(Entity):
                     collider.ignore_input = False
                     check_for_win()
 
-
         def reset_rotation_helper():
             [setattr(e, 'world_parent', scene) for e in cubes]
             rotation_helper.rotation = (0,0,0)
 
+        self.win_text_entity = Text(y=.35, text='Solving ...', color=color.white, origin=(0,0), scale=2, font='VeraMono.ttf')
 
         win_text_entity = Text(y=.35, text='', color=color.green, origin=(0,0), scale=3)
 
         def check_for_win():
             if {e.world_rotation for e in cubes} == {Vec3(0,0,0)}:
-                win_text_entity.text = 'SOLVED!'
-                win_text_entity.appear()
-            else:
-                win_text_entity.text = ''
+                self.win_text_entity.text = 'SOLVED!'
+                self.win_text_entity.appear()
+                self.isCompleted = True
 
         randomize()
 
         window.color = color._16
         EditorCamera()
+
+    def update(self):
+        # self.win_text_entity.position = Vec3(sin(time.time()), cos(time.time()), 0) * .4
+        self.timer += time.dt
+        if not self.isCompleted:
+            if self.timer > 0.5:
+                self.dots_count = (self.dots_count + 1) % (self.max_dots + 1)
+                self.win_text_entity.text = f'Solving{"." * self.dots_count}'
+                self.timer = 0
