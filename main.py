@@ -4,6 +4,7 @@ import kociemba
 from collections import Counter
 import colorama
 from ursina import *
+import time
 
 # Define the colors for better visualization
 colorama.init(autoreset=True)
@@ -56,7 +57,7 @@ color_map = {
     'F': (255, 0, 0),  # Blue
     'D': (255, 255, 255),  # White
     'L': (0, 165, 255),  # Orange
-    '': (255, 255, 255)  # Empty cell default color white
+    '': (220,220,220)  # Empty cell default color gray
 }
 
 # The ranges are defined in HSV as a tuple of two lists: the lower and upper bounds of the color range
@@ -260,6 +261,7 @@ def solve_cube(faces):
 
 # Main function of the application
 def run():
+    start_time = time.time()
     # Dictionary to store the mapping
     # The key is the mapped face, and the value is the number of occurrences
     # number_of_face_mapped is the number of faces that have been mapped so far
@@ -327,6 +329,8 @@ def run():
 
             solution = solve_cube(faces)
             if solution != "":
+                end_time = time.time()
+                print(f"{INFO}Time taken: {end_time - start_time:.2f} seconds")
                 break
             
     video.release()
